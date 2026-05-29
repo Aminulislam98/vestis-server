@@ -3,6 +3,7 @@ const dotenv = require("dotenv");
 const cors = require("cors");
 
 const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
+const { createRemoteJWKSet, jwtVerify } = require("jose-cjs");
 
 dotenv.config();
 const uri = process.env.MONGODB_URI;
@@ -19,9 +20,32 @@ const client = new MongoClient(uri, {
     deprecationErrors: true,
   },
 });
+const JWKS = createRemoteJWKSet(
+  new URL(`${process.env.CLIENT_URL}/api/auth/jwks`),
+);
+
+const verifyToken = async (req, res, next) => {
+  const header = req?.headers?.authorization;
+  if (!header) {
+    return res.status(401).json({ message: "Unauthorized" });
+  }
+  const token = header.split(" ")[1];
+
+  if (!token) {
+    return res.status(401).json({ message: "Unauthorized" });
+  }
+  try {
+    const { payload } = await jwtVerify(token, JWKS);
+    console.log("this is user payload:", payload);
+    next();
+  } catch (error) {
+    res.status(403).json({ message: "Forbidden" });
+  }
+};
+
 async function run() {
   try {
-    await client.connect();
+    // await client.connect();
 
     const db = client.db("vestis");
     const productsCollection = db.collection("products");
@@ -439,10 +463,9 @@ async function run() {
     });
 
     // getting single product
-    app.get("/product/:slug", async (req, res) => {
+    app.get("/product/:slug", verifyToken, async (req, res) => {
       const { slug } = req.params;
       const result = await productsCollection.findOne({ slug: slug });
-      console.log("this is product slug:", result);
       res.json(result);
     });
 
@@ -454,7 +477,7 @@ async function run() {
     });
 
     // Send a ping to confirm a successful connection
-    await client.db("admin").command({ ping: 1 });
+    // await client.db("admin").command({ ping: 1 });
     console.log(
       "Pinged your deployment. You successfully connected to MongoDB!",
     );
