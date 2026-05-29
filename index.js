@@ -463,7 +463,7 @@ async function run() {
     });
 
     // getting single product
-    app.get("/product/:slug", verifyToken, async (req, res) => {
+    app.get("/product/:slug", async (req, res) => {
       const { slug } = req.params;
       const result = await productsCollection.findOne({ slug: slug });
       res.json(result);
