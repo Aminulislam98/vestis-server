@@ -26,7 +26,6 @@ const JWKS = createRemoteJWKSet(
 
 const verifyToken = async (req, res, next) => {
   const header = req?.headers?.authorization;
-  
 
   if (!header) {
     return res.status(401).json({ message: "Unauthorized" });
@@ -43,10 +42,9 @@ const verifyToken = async (req, res, next) => {
       issuer: undefined,
       audience: undefined,
     });
-    
+
     next();
   } catch (error) {
-    
     res.status(403).json({ message: "Forbidden" });
   }
 };
@@ -376,37 +374,36 @@ async function run() {
 
       res.json({ success: true });
     });
-    // // merging all wishlist form guest id to userId
-    // app.post("/wishlist/merge", async (req, res) => {
-    //   const { guestId, userId } = req.body;
+    // merging all wishlist form guest id to userId
+    app.post("/wishlist/merge", async (req, res) => {
+      const { guestId, userId } = req.body;
 
-    //   const guestWishlist = await wishlistCollection.findOne({ guestId });
-    //   if (!guestWishlist) return res.json({ success: true });
+      const guestWishlist = await wishlistCollection.findOne({ guestId });
+      if (!guestWishlist) return res.json({ success: true });
 
-    //   const userWishlist = await wishlistCollection.findOne({ userId });
+      const userWishlist = await wishlistCollection.findOne({ userId });
 
-    //   if (!userWishlist) {
-    //     // ── Guest wishlist → user এর করো
-    //     await wishlistCollection.updateOne(
-    //       { guestId },
-    //       { $set: { userId, guestId: null } },
-    //     );
-    //   } else {
-    //     // ── Duplicate ছাড়া items merge করো
-    //     const newItems = guestWishlist.items.filter(
-    //       (g) => !userWishlist.items.some((u) => u.productId === g.productId),
-    //     );
-    //     if (newItems.length > 0) {
-    //       await wishlistCollection.updateOne(
-    //         { userId },
-    //         { $push: { items: { $each: newItems } } },
-    //       );
-    //     }
-    //     await wishlistCollection.deleteOne({ guestId });
-    //   }
+      if (!userWishlist) {
+        // ── Guest wishlist → user এর করো
+        await wishlistCollection.updateOne(
+          { guestId },
+          { $set: { userId, guestId: null } },
+        );
+      } else {
+        const newItems = guestWishlist.items.filter(
+          (g) => !userWishlist.items.some((u) => u.productId === g.productId),
+        );
+        if (newItems.length > 0) {
+          await wishlistCollection.updateOne(
+            { userId },
+            { $push: { items: { $each: newItems } } },
+          );
+        }
+        await wishlistCollection.deleteOne({ guestId });
+      }
 
-    //   res.json({ success: true });
-    // });
+      res.json({ success: true });
+    });
 
     // getting related products
     app.get("/products/related", async (req, res) => {
@@ -471,7 +468,7 @@ async function run() {
     });
 
     // getting single product
-    app.get("/product/:slug", verifyToken, async (req, res) => {
+    app.get("/product/:slug", async (req, res) => {
       const { slug } = req.params;
       const result = await productsCollection.findOne({ slug });
       if (!result) {
@@ -503,6 +500,4 @@ app.get("/", (req, res) => {
   res.send("server running properly mr aminul");
 });
 
-app.listen(PORT, () => {
-  
-});
+app.listen(PORT, () => {});
