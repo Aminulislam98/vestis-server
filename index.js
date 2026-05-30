@@ -26,7 +26,7 @@ const JWKS = createRemoteJWKSet(
 
 const verifyToken = async (req, res, next) => {
   const header = req?.headers?.authorization;
-  console.log("AUTH HEADER:", header);
+  
 
   if (!header) {
     return res.status(401).json({ message: "Unauthorized" });
@@ -43,10 +43,10 @@ const verifyToken = async (req, res, next) => {
       issuer: undefined,
       audience: undefined,
     });
-    console.log("TOKEN VERIFIED ✅:", payload.sub);
+    
     next();
   } catch (error) {
-    console.log("TOKEN FAILED ❌:", error.message);
+    
     res.status(403).json({ message: "Forbidden" });
   }
 };
@@ -504,5 +504,5 @@ app.get("/", (req, res) => {
 });
 
 app.listen(PORT, () => {
-  console.log("server running on port ", PORT);
+  
 });
