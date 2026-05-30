@@ -26,19 +26,17 @@ const JWKS = createRemoteJWKSet(
 
 const verifyToken = async (req, res, next) => {
   const header = req?.headers?.authorization;
-  if (!header) {
-    return res.status(401).json({ message: "Unauthorized" });
-  }
-  const token = header.split(" ")[1];
-
-  if (!token) {
-    return res.status(401).json({ message: "Unauthorized" });
-  }
+  console.log("AUTH HEADER:", header); // add this
+  // ...
   try {
-    const { payload } = await jwtVerify(token, JWKS);
-    console.log("this is user payload:", payload);
+    const { payload } = await jwtVerify(token, JWKS, {
+      issuer: undefined, // ← add this
+      audience: undefined, // ← add this
+    });
+    console.log("TOKEN VERIFIED ✅:", payload.sub);
     next();
   } catch (error) {
+    console.log("TOKEN FAILED ❌:", error.message); // add this
     res.status(403).json({ message: "Forbidden" });
   }
 };
@@ -463,7 +461,7 @@ async function run() {
     });
 
     // getting single product
-    app.get("/product/:slug", async (req, res) => {
+    app.get("/product/:slug", verifyToken, async (req, res) => {
       const { slug } = req.params;
       const result = await productsCollection.findOne({ slug: slug });
       res.json(result);
